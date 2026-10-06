@@ -270,7 +270,6 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "item_id",
-                "quantity",
                 "user_id"
             ],
             "properties": {

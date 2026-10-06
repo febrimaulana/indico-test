@@ -73,7 +73,6 @@ definitions:
         type: string
     required:
     - item_id
-    - quantity
     - user_id
     type: object
   internal_modules_inventory.ReserveResponse:
