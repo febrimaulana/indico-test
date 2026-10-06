@@ -1,5 +1,5 @@
 GOBIN ?= $(shell go env GOPATH)/bin
-POSTGRES_PORT ?= 5432
+POSTGRES_PORT ?= 5433
 TEST_DATABASE_URL ?= postgres://indico:indico@localhost:$(POSTGRES_PORT)/indico_test?sslmode=disable
 COMPOSE = docker compose -f ../docker-compose.yaml
 

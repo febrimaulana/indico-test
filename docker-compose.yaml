@@ -8,7 +8,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-indico}
       POSTGRES_DB: ${POSTGRES_DB:-indico}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      # Host port 5433 by default: 5432 is commonly occupied by a local PostgreSQL.
+      - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

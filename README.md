@@ -26,7 +26,7 @@ First run builds the images (~2–4 minutes). When the logs settle, open:
 | 🖥️ Mini Dashboard | http://localhost:3000 |
 | 📚 Swagger UI (Try it out) | http://localhost:8080/swagger/index.html |
 | ❤️ Health check | http://localhost:8080/api/v1/healthz |
-| 🐘 PostgreSQL | `localhost:5432` (user/pass/db: `indico`) |
+| 🐘 PostgreSQL | `localhost:5433` (user/pass/db: `indico`) |
 
 Migrations and seed data (`item_4021` with 100 stock, `item_4022` with 50) run
 automatically on backend startup — the dashboard is usable immediately.
@@ -34,7 +34,7 @@ automatically on backend startup — the dashboard is usable immediately.
 Port already taken? Override any port, for example:
 
 ```bash
-POSTGRES_PORT=5433 docker compose up
+POSTGRES_PORT=5434 docker compose up
 ```
 
 ## 🌐 Service URLs
@@ -43,7 +43,7 @@ POSTGRES_PORT=5433 docker compose up
 |---|---|---|
 | Frontend (nginx) | `3000` | `FRONTEND_PORT` |
 | Backend (Gin) | `8080` | `BACKEND_PORT` |
-| PostgreSQL | `5432` | `POSTGRES_PORT` |
+| PostgreSQL | `5433` | `POSTGRES_PORT` |
 
 ## ✨ Features
 
@@ -166,7 +166,7 @@ docker compose up -d postgres
 
 # 2. backend (http://localhost:8080, Swagger enabled)
 cd backend
-DATABASE_URL='postgres://indico:indico@localhost:5432/indico?sslmode=disable' go run ./cmd/api
+DATABASE_URL='postgres://indico:indico@localhost:5433/indico?sslmode=disable' go run ./cmd/api
 
 # 3. frontend (http://localhost:5173, /api proxied to :8080)
 cd frontend
@@ -210,7 +210,7 @@ indico/
 
 | Symptom | Fix |
 |---|---|
-| `Bind for 0.0.0.0:5432 failed` | another Postgres is running: `POSTGRES_PORT=5433 docker compose up` |
+| `Bind for ...:5433 failed` | the default host port is taken: `POSTGRES_PORT=5432 docker compose up` (or any free port) |
 | Want a clean database | `docker compose down -v && docker compose up` |
 | Backend restarts / can't reach DB | `docker compose logs backend` — it retries the connection automatically |
 | Regenerate Swagger after changing handlers | `cd backend && make swag` |
