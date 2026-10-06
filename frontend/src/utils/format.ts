@@ -18,6 +18,18 @@ export function formatClock(epochMillis: number | null): string {
   });
 }
 
+/** Render an ISO-8601 timestamp as a local HH:mm:ss clock. */
+export function formatIsoClock(isoTimestamp: string | null): string {
+  if (!isoTimestamp) {
+    return "-";
+  }
+  const epochMillis = new Date(isoTimestamp).getTime();
+  if (Number.isNaN(epochMillis)) {
+    return "-";
+  }
+  return formatClock(epochMillis);
+}
+
 /** Percentage of `part` against `total`, clamped to 0..100. */
 export function stockPercentage(part: number, total: number): number {
   if (total <= 0) {

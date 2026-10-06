@@ -40,6 +40,8 @@ export interface ActiveReservationModel {
   itemId: string;
   quantity: number;
   expiresAt: string;
+  /** Optional: older stored reservations predate this field. */
+  userId?: string;
 }
 
 /** Input collected by the reservation form. */

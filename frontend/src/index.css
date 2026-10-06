@@ -7,6 +7,184 @@ body,
 }
 
 body {
+  background-color: #020617;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---------------------------------------------------------------- keyframes */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -16px, 0);
+  }
+}
+
+@keyframes gradient-pan {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 200% 50%;
+  }
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 5px rgb(251 191 36 / 0.35));
+  }
+  50% {
+    filter: drop-shadow(0 0 14px rgb(251 191 36 / 0.7));
+  }
+}
+
+@keyframes check-draw {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes shrink-x {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* -------------------------------------------------------------- utilities */
+.animate-fade-up {
+  animation: fade-up 0.45s ease-out both;
+}
+
+.animate-pop-in {
+  animation: pop-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out both;
+}
+
+.animate-float-slow {
+  animation: float-slow 9s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 1.6s ease-in-out infinite;
+}
+
+.animate-check {
+  stroke-dasharray: 24;
+  animation: check-draw 0.6s ease-out 0.15s both;
+}
+
+.animate-shrink {
+  transform-origin: left;
+  animation: shrink-x 8s linear forwards;
+}
+
+.text-gradient-animated {
+  background-size: 200% auto;
+  animation: gradient-pan 6s linear infinite alternate;
+}
+
+/* Shimmering skeleton blocks. */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgb(30 41 59 / 0.75) 25%,
+    rgb(51 65 85 / 0.75) 37%,
+    rgb(30 41 59 / 0.75) 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+/* One-shot shine sweep on hover (primary / success buttons). */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -60%;
+  width: 40%;
+  transform: skewX(-20deg);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.28), transparent);
+  transition: left 0.55s ease;
+}
+
+.btn-shine:hover:not(:disabled)::after {
+  left: 130%;
+}
+
+/* Decorative dotted grid used behind the hero. */
+.bg-grid {
+  background-image: radial-gradient(circle at 1px 1px, rgb(99 102 241 / 0.3) 1px, transparent 0);
+  background-size: 26px 26px;
+}
+
+/* Respect users who prefer less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
