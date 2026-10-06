@@ -1,0 +1,25 @@
+# --- macOS ---
+.DS_Store
+
+# --- Environment ---
+.env
+.env.local
+*.local
+
+# --- Go ---
+backend/bin/
+backend/tmp/
+backend/coverage*.out
+backend/coverage.html
+backend/*.test
+
+# --- Node / Vite ---
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/*.tsbuildinfo
+
+# --- Editors ---
+.idea/
+.vscode/
+*.swp
