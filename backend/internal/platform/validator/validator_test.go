@@ -24,6 +24,8 @@ type everythingPayload struct {
 	Required string `json:"required" binding:"required"`
 	Min      string `json:"min" binding:"min=5"`
 	Max      string `json:"max" binding:"max=3"`
+	MinInt   int    `json:"min_int" binding:"min=5"`
+	MaxInt   int    `json:"max_int" binding:"max=3"`
 	GT       int    `json:"gt" binding:"gt=0"`
 	LTE      int    `json:"lte" binding:"lte=5"`
 	Ident    string `json:"ident" binding:"identifier"`
@@ -94,7 +96,7 @@ func TestTranslateAllRules(t *testing.T) {
 	v, err := newValidator()
 	require.NoError(t, err)
 
-	payload := everythingPayload{Max: "abcd", LTE: 10, Ident: "bad id!", Fallback: "abc"}
+	payload := everythingPayload{Max: "abcd", MinInt: 1, MaxInt: 5, LTE: 10, Ident: "bad id!", Fallback: "abc"}
 	err = v.Struct(payload)
 	require.Error(t, err)
 
@@ -106,6 +108,8 @@ func TestTranslateAllRules(t *testing.T) {
 	require.Equal(t, "required wajib diisi", byField["required"].Message)
 	require.Equal(t, "min minimal 5 karakter", byField["min"].Message)
 	require.Equal(t, "max maksimal 3 karakter", byField["max"].Message)
+	require.Equal(t, "min_int minimal 5", byField["min_int"].Message)
+	require.Equal(t, "max_int maksimal 3", byField["max_int"].Message)
 	require.Equal(t, "gt harus lebih dari 0", byField["gt"].Message)
 	require.Equal(t, "lte maksimal 5", byField["lte"].Message)
 	require.Contains(t, byField["ident"].Message, "hanya boleh berisi")

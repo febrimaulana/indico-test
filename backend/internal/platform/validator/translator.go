@@ -3,6 +3,7 @@ package validator
 import (
 	"errors"
 	"fmt"
+	"reflect"
 
 	"github.com/go-playground/validator/v10"
 
@@ -34,9 +35,15 @@ func messageFor(fieldError validator.FieldError) string {
 	case "required":
 		return fmt.Sprintf("%s wajib diisi", fieldError.Field())
 	case "min":
-		return fmt.Sprintf("%s minimal %s karakter", fieldError.Field(), fieldError.Param())
+		if fieldError.Kind() == reflect.String {
+			return fmt.Sprintf("%s minimal %s karakter", fieldError.Field(), fieldError.Param())
+		}
+		return fmt.Sprintf("%s minimal %s", fieldError.Field(), fieldError.Param())
 	case "max":
-		return fmt.Sprintf("%s maksimal %s karakter", fieldError.Field(), fieldError.Param())
+		if fieldError.Kind() == reflect.String {
+			return fmt.Sprintf("%s maksimal %s karakter", fieldError.Field(), fieldError.Param())
+		}
+		return fmt.Sprintf("%s maksimal %s", fieldError.Field(), fieldError.Param())
 	case "gt":
 		return fmt.Sprintf("%s harus lebih dari %s", fieldError.Field(), fieldError.Param())
 	case "lte":
