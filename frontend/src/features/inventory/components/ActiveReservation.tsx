@@ -14,9 +14,9 @@ interface ActiveReservationProps {
   reservation: ActiveReservationModel;
   isConfirming: boolean;
   error: unknown;
-  onConfirm: () => void;
-  onExpired: () => void;
-  onClearExpired: () => void;
+  onConfirm: (reservation: ActiveReservationModel) => void;
+  onExpired: (reservation: ActiveReservationModel) => void;
+  onRemove: (reservation: ActiveReservationModel) => void;
 }
 
 interface DetailItemProps {
@@ -34,14 +34,17 @@ const DetailItem = memo(function DetailItem({ label, value, mono = false }: Deta
   );
 });
 
-/** Countdown + Confirm Purchase workflow for the current reservation. */
+/**
+ * One reservation card: its own countdown, details and Confirm Purchase
+ * button. Each reserve call creates an independent card.
+ */
 export const ActiveReservation = memo(function ActiveReservation({
   reservation,
   isConfirming,
   error,
   onConfirm,
   onExpired,
-  onClearExpired,
+  onRemove,
 }: ActiveReservationProps) {
   const { remainingSeconds, isExpired } = useCountdown(reservation.expiresAt);
 
@@ -49,15 +52,17 @@ export const ActiveReservation = memo(function ActiveReservation({
   // effect re-runs when a new reservation (new expiresAt) replaces it.
   useEffect(() => {
     if (isExpired) {
-      onExpired();
+      onExpired(reservation);
     }
-  }, [isExpired, onExpired]);
+  }, [isExpired, onExpired, reservation]);
 
   const handleConfirm = useCallback(() => {
     if (!isExpired) {
-      onConfirm();
+      onConfirm(reservation);
     }
-  }, [isExpired, onConfirm]);
+  }, [isExpired, onConfirm, reservation]);
+
+  const handleRemove = useCallback(() => onRemove(reservation), [onRemove, reservation]);
 
   const borderGradient = isExpired
     ? "from-amber-400/40 via-amber-500/10 to-transparent"
@@ -69,7 +74,7 @@ export const ActiveReservation = memo(function ActiveReservation({
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-white">Reservasi Aktif</h2>
+              <h3 className="text-base font-semibold text-white">Reservasi Aktif</h3>
               <Badge tone={isExpired ? "warning" : "success"} pulse={!isExpired}>
                 {isExpired ? "kedaluwarsa" : "menunggu konfirmasi"}
               </Badge>
@@ -100,8 +105,8 @@ export const ActiveReservation = memo(function ActiveReservation({
             {isExpired ? (
               <div className="animate-slide-in mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-amber-500/40 bg-amber-950/40 px-3.5 py-3 text-xs text-amber-200">
                 <span>Reservasi ini sudah kedaluwarsa. Stoknya otomatis dikembalikan oleh server.</span>
-                <Button variant="secondary" className="ml-auto" onClick={onClearExpired}>
-                  Reservasi baru
+                <Button variant="secondary" className="ml-auto" onClick={handleRemove}>
+                  Hapus dari daftar
                 </Button>
               </div>
             ) : null}

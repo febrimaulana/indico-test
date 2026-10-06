@@ -101,8 +101,8 @@ export const StockPanel = memo(function StockPanel({
   }, [history]);
 
   return (
-    <section className="rounded-2xl bg-linear-to-b from-white/10 via-white/5 to-transparent p-px shadow-2xl shadow-slate-950/60">
-      <div className="rounded-[15px] bg-slate-900/70 p-5 backdrop-blur">
+    <section className="h-full rounded-2xl bg-linear-to-b from-white/10 via-white/5 to-transparent p-px shadow-2xl shadow-slate-950/60">
+      <div className="flex h-full flex-col rounded-[15px] bg-slate-900/70 p-5 backdrop-blur">
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
@@ -197,19 +197,21 @@ export const StockPanel = memo(function StockPanel({
               </div>
             </div>
 
-            <div className="mt-5 rounded-xl border border-slate-800/80 bg-slate-950/60 p-3">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="uppercase tracking-wider text-slate-400">Tren stok tersedia</span>
-                <span
-                  className={`font-mono ${
-                    trendDelta < 0 ? "text-rose-300" : trendDelta > 0 ? "text-emerald-300" : "text-slate-500"
-                  }`}
-                >
-                  {trendDelta > 0 ? `▲ +${trendDelta}` : trendDelta < 0 ? `▼ ${trendDelta}` : "—"} · {history.length} sampel
-                </span>
-              </div>
-              <div className="mt-2">
-                <Sparkline samples={history} />
+            <div className="mt-auto pt-5">
+              <div className="rounded-xl border border-slate-800/80 bg-slate-950/60 p-3">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="uppercase tracking-wider text-slate-400">Tren stok tersedia</span>
+                  <span
+                    className={`font-mono ${
+                      trendDelta < 0 ? "text-rose-300" : trendDelta > 0 ? "text-emerald-300" : "text-slate-500"
+                    }`}
+                  >
+                    {trendDelta > 0 ? `▲ +${trendDelta}` : trendDelta < 0 ? `▼ ${trendDelta}` : "—"} · {history.length} sampel
+                  </span>
+                </div>
+                <div className="mt-2">
+                  <Sparkline samples={history} />
+                </div>
               </div>
             </div>
           </>

@@ -1,18 +1,18 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { confirmReservation } from "../api";
 import { inventoryQueryKeys } from "../queryKeys";
-import type { ActiveReservationModel } from "../types";
 
-/** Confirms a reservation and refreshes the stock query on success. */
-export function useConfirmMutation(reservation: ActiveReservationModel | null) {
+/**
+ * Confirms a reservation. The dashboard displays a single item, so the stock
+ * query for that item is invalidated on success.
+ */
+export function useConfirmMutation(itemId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: confirmReservation,
     onSuccess: () => {
-      if (reservation) {
-        void queryClient.invalidateQueries({ queryKey: inventoryQueryKeys.stock(reservation.itemId) });
-      }
+      void queryClient.invalidateQueries({ queryKey: inventoryQueryKeys.stock(itemId) });
     },
   });
 }

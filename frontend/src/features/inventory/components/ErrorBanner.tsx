@@ -26,7 +26,12 @@ function describeError(error: unknown, fallbackMessage: string): ErrorDescriptio
   return { message: fallbackMessage, code: null, details: [] };
 }
 
-/** Renders any backend negative state (400/404/409/410/500) as a readable banner. */
+/**
+ * Renders any backend negative state as a centered, user-friendly banner.
+ * The user only sees the Bahasa Indonesia message; the English error code is
+ * developer-facing (it stays in the API response, Swagger and the code
+ * branching) and is shown in the UI only during development.
+ */
 export const ErrorBanner = memo(function ErrorBanner({ error, fallbackMessage = "terjadi kesalahan" }: ErrorBannerProps) {
   if (!error) {
     return null;
@@ -36,30 +41,26 @@ export const ErrorBanner = memo(function ErrorBanner({ error, fallbackMessage = 
   return (
     <div
       role="alert"
-      className="animate-slide-in flex gap-3 rounded-xl border border-rose-500/40 bg-linear-to-r from-rose-950/60 to-slate-950/40 p-3.5 text-sm"
+      className="animate-slide-in rounded-xl border border-rose-500/40 bg-linear-to-r from-rose-950/60 to-slate-950/40 px-4 py-3.5 text-sm"
     >
-      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-500/20">
-        <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" aria-hidden="true">
+      <p className="flex items-center justify-center gap-2 text-center font-semibold text-rose-100">
+        <svg viewBox="0 0 20 20" className="h-4 w-4 shrink-0" fill="none" aria-hidden="true">
           <path d="M10 6v5M10 14h.01" stroke="#fda4af" strokeWidth="2" strokeLinecap="round" />
         </svg>
-      </span>
-      <div className="min-w-0">
-        <p className="flex flex-wrap items-center gap-2 font-semibold text-rose-100">
-          <span>{message}</span>
-          {code ? (
-            <span className="rounded bg-rose-900/80 px-1.5 py-0.5 font-mono text-[10px] tracking-wide text-rose-300">
-              {code}
-            </span>
-          ) : null}
-        </p>
-        {details.length > 0 ? (
-          <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs text-rose-300">
-            {details.map((detail) => (
-              <li key={detail}>{detail}</li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
+        <span>{message}</span>
+      </p>
+
+      {details.length > 0 ? (
+        <ul className="mt-1.5 space-y-0.5 text-center text-xs text-rose-300">
+          {details.map((detail) => (
+            <li key={detail}>{detail}</li>
+          ))}
+        </ul>
+      ) : null}
+
+      {import.meta.env.DEV && code ? (
+        <p className="mt-2 text-center font-mono text-[10px] tracking-wide text-rose-400/70">dev · {code}</p>
+      ) : null}
     </div>
   );
 });

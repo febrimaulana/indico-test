@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { DEFAULT_ITEM_ID } from "../../config";
 import { ApiError } from "../../lib/axios";
@@ -12,7 +12,7 @@ import { useConfirmMutation } from "./hooks/useConfirmMutation";
 import { useReserveMutation } from "./hooks/useReserveMutation";
 import { useStockQuery } from "./hooks/useStockQuery";
 import { inventoryQueryKeys } from "./queryKeys";
-import { clearStoredReservation, loadStoredReservation, storeReservation } from "./storage";
+import { clearStoredReservations, loadStoredReservations, storeReservations } from "./storage";
 import type { ActiveReservationModel, ReservationFormInput } from "./types";
 
 /** Errors after which the local reservation is no longer usable. */
@@ -29,15 +29,28 @@ export function InventoryDashboard() {
 
   const stockQuery = useStockQuery(itemId);
   const reserveMutation = useReserveMutation();
-  const [activeReservation, setActiveReservation] = useState<ActiveReservationModel | null>(() => loadStoredReservation());
+  const [activeReservations, setActiveReservations] = useState<ActiveReservationModel[]>(() => loadStoredReservations());
   const [receipt, setReceipt] = useState<ConfirmationReceipt | null>(null);
-  const confirmMutation = useConfirmMutation(activeReservation);
+  const confirmMutation = useConfirmMutation(itemId);
 
   const { refetch } = stockQuery;
   const handleRefresh = useCallback(() => {
     void refetch();
   }, [refetch]);
 
+  const removeReservation = useCallback((reservationId: string) => {
+    setActiveReservations((previous) => {
+      const next = previous.filter((item) => item.reservationId !== reservationId);
+      if (next.length === 0) {
+        clearStoredReservations();
+      } else {
+        storeReservations(next);
+      }
+      return next;
+    });
+  }, []);
+
+  // Every successful reserve adds an independent card (own id, own countdown).
   const handleReserve = useCallback(
     (input: ReservationFormInput) => {
       reserveMutation.mutate(
@@ -51,9 +64,15 @@ export function InventoryDashboard() {
               expiresAt: response.expires_at,
               userId: input.userId,
             };
-            setActiveReservation(reservation);
+            setActiveReservations((previous) => {
+              const next = [
+                reservation,
+                ...previous.filter((item) => item.reservationId !== reservation.reservationId),
+              ];
+              storeReservations(next);
+              return next;
+            });
             setReceipt(null);
-            storeReservation(reservation);
           },
         },
       );
@@ -61,41 +80,46 @@ export function InventoryDashboard() {
     [itemId, reserveMutation],
   );
 
-  const handleConfirm = useCallback(() => {
-    if (!activeReservation) {
-      return;
-    }
-    confirmMutation.mutate(
-      { reservation_id: activeReservation.reservationId },
-      {
-        onSuccess: (response) => {
-          setReceipt({ reservationId: response.reservation_id, confirmedAt: response.confirmed_at });
-          setActiveReservation(null);
-          clearStoredReservation();
+  const handleConfirm = useCallback(
+    (reservation: ActiveReservationModel) => {
+      confirmMutation.mutate(
+        { reservation_id: reservation.reservationId },
+        {
+          onSuccess: (response) => {
+            setReceipt({ reservationId: response.reservation_id, confirmedAt: response.confirmed_at });
+            removeReservation(reservation.reservationId);
+          },
+          onError: (error) => {
+            if (error instanceof ApiError && TERMINAL_ERROR_CODES.has(error.code)) {
+              removeReservation(reservation.reservationId);
+            }
+          },
         },
-        onError: (error) => {
-          if (error instanceof ApiError && TERMINAL_ERROR_CODES.has(error.code)) {
-            setActiveReservation(null);
-            clearStoredReservation();
-          }
-        },
-      },
-    );
-  }, [activeReservation, confirmMutation]);
+      );
+    },
+    [confirmMutation, removeReservation],
+  );
 
   const handleExpired = useCallback(() => {
     // The sweeper returns the stock; refresh the tracker so the UI matches.
     void queryClient.invalidateQueries({ queryKey: inventoryQueryKeys.stock(itemId) });
   }, [itemId, queryClient]);
 
-  const handleClearExpired = useCallback(() => {
-    setActiveReservation(null);
-    clearStoredReservation();
-  }, []);
+  const handleRemove = useCallback(
+    (reservation: ActiveReservationModel) => {
+      removeReservation(reservation.reservationId);
+    },
+    [removeReservation],
+  );
 
   const handleDismissReceipt = useCallback(() => setReceipt(null), []);
 
   const lastUpdatedAt = stockQuery.dataUpdatedAt > 0 ? stockQuery.dataUpdatedAt : null;
+  const pendingConfirmId = confirmMutation.isPending ? confirmMutation.variables?.reservation_id : undefined;
+  const totalReservedUnits = useMemo(
+    () => activeReservations.reduce((sum, reservation) => sum + reservation.quantity, 0),
+    [activeReservations],
+  );
 
   return (
     <div className="relative min-h-screen">
@@ -126,19 +150,9 @@ export function InventoryDashboard() {
               .
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-slate-400 sm:text-base">
-              Reservasi atomik tanpa oversell, countdown 5 menit, dan stok kembali otomatis kalau tidak dikonfirmasi.
+              Reservasi atomik tanpa oversell, countdown 5 menit per reservasi, dan stok kembali otomatis kalau tidak
+              dikonfirmasi.
             </p>
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-              <span className="rounded-full border border-slate-700/80 bg-slate-900/60 px-3 py-1 text-[11px] font-medium text-slate-300">
-                ⚡ Anti-oversell
-              </span>
-              <span className="rounded-full border border-slate-700/80 bg-slate-900/60 px-3 py-1 text-[11px] font-medium text-slate-300">
-                ⏱️ Auto-expiry 5 menit
-              </span>
-              <span className="rounded-full border border-slate-700/80 bg-slate-900/60 px-3 py-1 text-[11px] font-medium text-slate-300">
-                🧪 100% test coverage
-              </span>
-            </div>
           </section>
 
           {receipt ? (
@@ -168,22 +182,38 @@ export function InventoryDashboard() {
                 itemId={itemId}
                 isPending={reserveMutation.isPending}
                 error={reserveMutation.error}
-                hasActiveReservation={activeReservation !== null}
                 onReserve={handleReserve}
               />
             </div>
           </div>
 
           <div className="animate-fade-up mt-6" style={{ animationDelay: "0.16s" }}>
-            {activeReservation ? (
-              <ActiveReservation
-                reservation={activeReservation}
-                isConfirming={confirmMutation.isPending}
-                error={confirmMutation.error}
-                onConfirm={handleConfirm}
-                onExpired={handleExpired}
-                onClearExpired={handleClearExpired}
-              />
+            {activeReservations.length > 0 ? (
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-lg font-semibold text-white">Reservasi Aktif</h2>
+                  <span className="rounded-full border border-slate-700/80 bg-slate-900/60 px-3 py-1 text-[11px] font-medium text-slate-300">
+                    {activeReservations.length} reservasi · total {totalReservedUnits} unit
+                  </span>
+                </div>
+                <div className="grid gap-4">
+                  {activeReservations.map((reservation) => (
+                    <ActiveReservation
+                      key={reservation.reservationId}
+                      reservation={reservation}
+                      isConfirming={pendingConfirmId === reservation.reservationId}
+                      error={
+                        confirmMutation.variables?.reservation_id === reservation.reservationId
+                          ? confirmMutation.error
+                          : null
+                      }
+                      onConfirm={handleConfirm}
+                      onExpired={handleExpired}
+                      onRemove={handleRemove}
+                    />
+                  ))}
+                </div>
+              </div>
             ) : (
               <EmptyState />
             )}

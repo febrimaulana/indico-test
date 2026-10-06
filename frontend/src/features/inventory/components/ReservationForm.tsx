@@ -13,7 +13,6 @@ interface ReservationFormProps {
   itemId: string;
   isPending: boolean;
   error: unknown;
-  hasActiveReservation: boolean;
   onReserve: (input: ReservationFormInput) => void;
 }
 
@@ -21,7 +20,6 @@ export const ReservationForm = memo(function ReservationForm({
   itemId,
   isPending,
   error,
-  hasActiveReservation,
   onReserve,
 }: ReservationFormProps) {
   const [userId, setUserId] = useState("usr_9981");
@@ -55,19 +53,21 @@ export const ReservationForm = memo(function ReservationForm({
   const canSubmit = isValidUserId && isValidQuantity && !isPending;
 
   return (
-    <section className="rounded-2xl bg-linear-to-b from-white/10 via-white/5 to-transparent p-px shadow-2xl shadow-slate-950/60">
-      <div className="rounded-[15px] bg-slate-900/70 p-5 backdrop-blur">
+    <section className="h-full rounded-2xl bg-linear-to-b from-white/10 via-white/5 to-transparent p-px shadow-2xl shadow-slate-950/60">
+      <div className="flex h-full flex-col rounded-[15px] bg-slate-900/70 p-5 backdrop-blur">
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-white">Buat Reservasi</h2>
-            <p className="mt-1 text-xs text-slate-400">Stok dikunci untuk Anda selama 5 menit.</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Stok dikunci untuk Anda selama 5 menit. Bisa reservasi berkali-kali — setiap reservasi punya countdown sendiri.
+            </p>
           </div>
           <Badge tone="info">
             <span className="font-mono">{itemId}</span>
           </Badge>
         </header>
 
-        <form className="mt-5 space-y-5" onSubmit={handleSubmit}>
+        <form className="mt-5 flex flex-1 flex-col gap-5" onSubmit={handleSubmit}>
           <div>
             <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-slate-400" htmlFor="user-id">
               User ID
@@ -81,7 +81,8 @@ export const ReservationForm = memo(function ReservationForm({
               placeholder="usr_9981"
               autoComplete="off"
               spellCheck={false}
-              className={`w-full rounded-xl border bg-slate-950/80 px-3.5 py-2.5 font-mono text-sm text-slate-100 outline-none transition-all placeholder:text-slate-600 focus:ring-2 focus:ring-indigo-500/30 ${
+              disabled={isPending}
+              className={`w-full rounded-xl border bg-slate-950/80 px-3.5 py-2.5 font-mono text-sm text-slate-100 outline-none transition-all placeholder:text-slate-600 focus:ring-2 focus:ring-indigo-500/30 disabled:cursor-not-allowed disabled:opacity-50 ${
                 isValidUserId || trimmedUserId.length === 0
                   ? "border-slate-700 focus:border-indigo-500"
                   : "border-rose-500/70 focus:border-rose-400"
@@ -113,7 +114,8 @@ export const ReservationForm = memo(function ReservationForm({
                 max={MAX_QUANTITY}
                 value={Number.isFinite(quantity) ? quantity : ""}
                 onChange={handleQuantityInput}
-                className="h-11 w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3 text-center font-mono text-base text-slate-100 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"
+                disabled={isPending}
+                className="h-11 w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3 text-center font-mono text-base text-slate-100 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 disabled:cursor-not-allowed disabled:opacity-50"
               />
               <Button
                 type="button"
@@ -134,7 +136,7 @@ export const ReservationForm = memo(function ReservationForm({
                   type="button"
                   onClick={() => setQuantity(preset)}
                   disabled={isPending}
-                  className={`rounded-lg border px-3 py-1 font-mono text-xs transition-all duration-150 active:scale-95 disabled:cursor-not-allowed ${
+                  className={`rounded-lg border px-3 py-1 font-mono text-xs transition-all duration-150 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
                     quantity === preset
                       ? "border-indigo-400/70 bg-linear-to-r from-indigo-500/30 to-violet-500/30 text-indigo-100 shadow-sm shadow-indigo-950/40"
                       : "border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"
@@ -146,15 +148,9 @@ export const ReservationForm = memo(function ReservationForm({
             </div>
           </div>
 
-          {hasActiveReservation ? (
-            <p className="animate-slide-in rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-3.5 py-2.5 text-xs text-indigo-200">
-              Anda masih punya reservasi aktif — selesaikan atau tunggu countdown-nya habis sebelum membuat yang baru.
-            </p>
-          ) : null}
-
           {error ? <ErrorBanner error={error} fallbackMessage="reservasi gagal" /> : null}
 
-          <Button type="submit" className="w-full" disabled={!canSubmit}>
+          <Button type="submit" className="mt-auto w-full" disabled={!canSubmit}>
             {isPending ? (
               <Spinner label="Memproses reservasi..." />
             ) : (
