@@ -178,15 +178,19 @@ npm run dev
 
 ```bash
 cd backend
-make test              # unit tests (integration auto-skips without a database)
+make test              # unit + integration; integration runs when a local PostgreSQL is reachable
 make test-race         # go test -race -v ./...  (assignment requirement)
-make test-integration  # spins up the compose postgres + runs integration/stress tests
+make test-integration  # spins up the compose postgres + runs only integration/stress tests
 make coverage          # unit + integration, fails below 100% of ./internal/...
 ```
 
 Coverage gate: **100% of `./internal/...`** statements (unit + integration combined,
 `-race`). The stress test (`TestIntegrationConcurrentReserveNeverOversells`) fires 200
 concurrent reserves at stock 10 and proves exactly 10 succeed.
+
+Integration tests auto-detect the compose database (`localhost:5433`, test databases are
+created on demand) and skip only when PostgreSQL is unreachable — so plain
+`go test -race -v ./...` runs the stress tests whenever `docker compose up` is active.
 
 ## 📁 Project Structure
 

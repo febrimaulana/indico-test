@@ -14,7 +14,8 @@ build:
 lint:
 	go vet ./...
 
-## Unit tests only (integration tests auto-skip without TEST_DATABASE_URL).
+## Unit + integration tests. Integration tests auto-detect a local PostgreSQL
+## (compose default localhost:5433, test DB created on demand) and skip when absent.
 test:
 	go test -p 1 ./...
 

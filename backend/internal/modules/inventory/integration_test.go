@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -22,23 +24,40 @@ import (
 const (
 	integrationItemID = "item_test"
 	integrationStock  = 10
+	// Default database when TEST_DATABASE_URL is unset: matches the compose
+	// PostgreSQL (host port 5433) and the Makefile.
+	defaultIntegrationDSN = "postgres://indico:indico@localhost:5433/indico_test?sslmode=disable&connect_timeout=2"
 )
 
 var (
 	integrationOnce sync.Once
 	integrationDB   *gorm.DB
 	integrationErr  error
+	// integrationDSN holds the DSN actually used (env or auto-detected).
+	integrationDSN string
 )
 
-// requireIntegrationDB connects to PostgreSQL when TEST_DATABASE_URL is set,
-// runs migrations once and returns the shared connection. Tests are skipped
-// (not failed) when the variable is absent.
+// requireIntegrationDB returns the shared integration connection. It uses
+// TEST_DATABASE_URL when set, otherwise it falls back to the compose
+// PostgreSQL and creates the test database on the fly. When no database is
+// reachable the test is skipped (not failed) so `go test ./...` stays green
+// on machines without PostgreSQL.
 func requireIntegrationDB(t *testing.T) *gorm.DB {
 	t.Helper()
+
 	dsn := os.Getenv("TEST_DATABASE_URL")
-	if dsn == "" {
-		t.Skip("TEST_DATABASE_URL tidak diset - melewati integration test")
+	explicit := dsn != ""
+	if !explicit {
+		dsn = defaultIntegrationDSN
+		if !canOpenIntegrationDatabase(dsn) {
+			createIntegrationDatabase(dsn)
+			if !canOpenIntegrationDatabase(dsn) {
+				t.Skipf("PostgreSQL tidak tersedia di %s - melewati integration test", dsn)
+			}
+		}
 	}
+
+	integrationDSN = dsn
 	integrationOnce.Do(func() {
 		integrationDB, integrationErr = database.OpenWithRetry(
 			context.Background(),
@@ -53,6 +72,58 @@ func requireIntegrationDB(t *testing.T) *gorm.DB {
 	})
 	require.NoError(t, integrationErr)
 	return integrationDB
+}
+
+// canOpenIntegrationDatabase reports whether the DSN is reachable.
+func canOpenIntegrationDatabase(dsn string) bool {
+	db, err := database.Open(dsn, database.PoolConfig{MaxOpenConns: 1, MaxIdleConns: 1, ConnMaxLifetime: time.Minute})
+	if err != nil {
+		return false
+	}
+	if sqlDB, err := db.DB(); err == nil && sqlDB != nil {
+		_ = sqlDB.Close()
+	}
+	return true
+}
+
+// createIntegrationDatabase connects through the maintenance database and
+// creates the configured test database, mirroring `make ensure-test-db`.
+func createIntegrationDatabase(dsn string) {
+	parsed, err := url.Parse(dsn)
+	if err != nil {
+		return
+	}
+	name := strings.TrimPrefix(parsed.Path, "/")
+	if !validIntegrationDatabaseName(name) {
+		return
+	}
+
+	adminURL := *parsed
+	adminURL.Path = "/postgres"
+	admin, err := database.Open(adminURL.String(), database.PoolConfig{MaxOpenConns: 1, MaxIdleConns: 1, ConnMaxLifetime: time.Minute})
+	if err != nil {
+		return
+	}
+	defer func() {
+		if sqlDB, err := admin.DB(); err == nil && sqlDB != nil {
+			_ = sqlDB.Close()
+		}
+	}()
+	_ = admin.Exec(`CREATE DATABASE "` + name + `"`).Error
+}
+
+func validIntegrationDatabaseName(name string) bool {
+	if name == "" {
+		return false
+	}
+	for _, char := range name {
+		isLower := char >= 'a' && char <= 'z'
+		isDigit := char >= '0' && char <= '9'
+		if !isLower && !isDigit && char != '_' {
+			return false
+		}
+	}
+	return true
 }
 
 func resetItem(t *testing.T, db *gorm.DB, totalStock int) {
@@ -78,8 +149,7 @@ func testSlog() *slog.Logger {
 
 func TestIntegrationMigrationsIdempotent(t *testing.T) {
 	requireIntegrationDB(t)
-	dsn := os.Getenv("TEST_DATABASE_URL")
-	require.NoError(t, database.RunMigrations(dsn, migrations.FS))
+	require.NoError(t, database.RunMigrations(integrationDSN, migrations.FS))
 }
 
 func TestIntegrationReserveConfirmFlow(t *testing.T) {

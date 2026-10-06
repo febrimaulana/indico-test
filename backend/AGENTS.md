@@ -44,7 +44,7 @@ Feature-first modular monolith. One domain = one folder in `internal/modules/<do
 ## Testing Policy
 
 - Unit tests: fakes for repository/TxManager/Clock/IDGenerator. No DB, no network.
-- Integration tests (`integration_test.go`): require `TEST_DATABASE_URL`; auto-`t.Skip` when unset. Truncate tables + re-seed between tests.
+- Integration tests (`integration_test.go`): use `TEST_DATABASE_URL` when set, otherwise auto-detect the compose PostgreSQL (`localhost:5433`, test database created on demand); `t.Skip` when no database is reachable. Truncate tables + re-seed between tests.
 - New endpoint/behavior = success test + minimum 2 negative tests.
 - Coverage gate: `make coverage` must report 100% for `./internal/...` (unit + integration combined). `cmd/` is excluded.
 - Reachability seams are mandatory for 100% coverage: inject Clock, ID generator, random reader, migrate/listen function vars. Do NOT write fake/empty tests to inflate coverage.
