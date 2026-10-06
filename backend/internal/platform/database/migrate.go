@@ -16,8 +16,12 @@ type migrator interface {
 	Close() (source error, database error)
 }
 
-// newMigrator is a seam so unit tests can inject migration failures.
-var newMigrator = func(fsys fs.FS, databaseURL string) (migrator, error) {
+// newMigrator is a seam so unit tests can inject migration failures. It
+// defaults to the real implementation.
+var newMigrator = newMigratorReal
+
+// newMigratorReal builds the golang-migrate instance from an embedded FS.
+func newMigratorReal(fsys fs.FS, databaseURL string) (migrator, error) {
 	source, err := iofs.New(fsys, ".")
 	if err != nil {
 		return nil, fmt.Errorf("gagal membaca file migrasi: %w", err)

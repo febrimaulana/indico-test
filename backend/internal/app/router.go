@@ -14,12 +14,21 @@ import (
 	"indico/backend/internal/platform/config"
 	"indico/backend/internal/platform/httpx"
 	"indico/backend/internal/platform/middleware"
+	"indico/backend/internal/platform/validator"
 )
+
+// registerValidator is a seam so tests can force the registration failure.
+var registerValidator = validator.Register
 
 // BuildRouter assembles the gin engine: global middleware, platform routes
 // (health + swagger), module routes, and JSON fallbacks for unknown routes.
 func BuildRouter(cfg config.Config, log *slog.Logger, inventoryModule *inventory.Module) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
+
+	if err := registerValidator(); err != nil {
+		log.Error("gagal mendaftarkan validator", "error", err)
+	}
+
 	engine := gin.New()
 	engine.HandleMethodNotAllowed = true
 

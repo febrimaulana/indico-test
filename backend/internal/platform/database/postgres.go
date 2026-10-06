@@ -27,8 +27,9 @@ var dbFrom = func(db *gorm.DB) (*sql.DB, error) { return db.DB() }
 // Open opens a GORM connection, tunes the pool and verifies connectivity.
 func Open(dsn string, pool PoolConfig) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger:         gormlogger.Default.LogMode(gormlogger.Silent),
-		TranslateError: true,
+		Logger:               gormlogger.Default.LogMode(gormlogger.Silent),
+		TranslateError:       true,
+		DisableAutomaticPing: true, // ping is done explicitly after pool tuning
 	})
 	if err != nil {
 		return nil, fmt.Errorf("gagal membuka koneksi database: %w", err)

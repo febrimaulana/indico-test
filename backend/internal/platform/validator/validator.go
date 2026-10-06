@@ -52,19 +52,38 @@ func (d *Default) Engine() any { return d.validate }
 // Register installs the shared validator into Gin and registers custom rules.
 // Field names in validation errors follow the JSON tags.
 func Register() error {
+	v, err := newValidator()
+	if err != nil {
+		return err
+	}
+	binding.Validator = &Default{validate: v}
+	return nil
+}
+
+// newValidator builds a go-playground validator configured for gin's
+// "binding" tags with JSON field names and the custom rules.
+func newValidator() (*validator.Validate, error) {
 	v := validator.New()
+	v.SetTagName("binding")
 	v.RegisterTagNameFunc(func(field reflect.StructField) string {
+		// Match gin's behavior: prefer the json tag, then form, then the Go
+		// field name.
 		name := strings.SplitN(field.Tag.Get("json"), ",", 2)[0]
+		if name == "-" {
+			name = ""
+		}
+		if name == "" {
+			name = strings.SplitN(field.Tag.Get("form"), ",", 2)[0]
+		}
 		if name == "" || name == "-" {
 			return field.Name
 		}
 		return name
 	})
 	if err := registerValidation(v, "identifier", validateIdentifier); err != nil {
-		return err
+		return nil, err
 	}
-	binding.Validator = &Default{validate: v}
-	return nil
+	return v, nil
 }
 
 func validateIdentifier(level validator.FieldLevel) bool {

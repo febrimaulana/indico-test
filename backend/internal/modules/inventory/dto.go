@@ -4,7 +4,7 @@ package inventory
 type ReserveRequest struct {
 	UserID   string `json:"user_id" binding:"required,min=3,max=64,identifier" example:"usr_9981"`
 	ItemID   string `json:"item_id" binding:"required,min=3,max=64,identifier" example:"item_4021"`
-	Quantity int    `json:"quantity" binding:"required,gt=0,max=1000" example:"2"`
+	Quantity int    `json:"quantity" binding:"gt=0,max=1000" example:"2"`
 }
 
 // ReserveResponse is the success payload for reserve.
