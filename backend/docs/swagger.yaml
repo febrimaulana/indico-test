@@ -1,0 +1,235 @@
+basePath: /
+definitions:
+  indico_backend_internal_platform_httpx.ErrorDetail:
+    properties:
+      field:
+        example: quantity
+        type: string
+      message:
+        example: quantity harus lebih dari 0
+        type: string
+      rule:
+        example: gt
+        type: string
+    type: object
+  indico_backend_internal_platform_httpx.ErrorInfo:
+    properties:
+      code:
+        example: INSUFFICIENT_STOCK
+        type: string
+      details:
+        items:
+          $ref: '#/definitions/indico_backend_internal_platform_httpx.ErrorDetail'
+        type: array
+      message:
+        example: stok tidak mencukupi
+        type: string
+    type: object
+  indico_backend_internal_platform_httpx.ErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/indico_backend_internal_platform_httpx.ErrorInfo'
+      status:
+        example: error
+        type: string
+    type: object
+  internal_modules_inventory.ConfirmRequest:
+    properties:
+      reservation_id:
+        example: res_883291
+        maxLength: 64
+        minLength: 3
+        type: string
+    required:
+    - reservation_id
+    type: object
+  internal_modules_inventory.ConfirmResponse:
+    properties:
+      confirmed_at:
+        example: "2026-07-20T16:32:00Z"
+        type: string
+      reservation_id:
+        example: res_883291
+        type: string
+      status:
+        example: success
+        type: string
+    type: object
+  internal_modules_inventory.ReserveRequest:
+    properties:
+      item_id:
+        example: item_4021
+        maxLength: 64
+        minLength: 3
+        type: string
+      quantity:
+        example: 2
+        maximum: 1000
+        type: integer
+      user_id:
+        example: usr_9981
+        maxLength: 64
+        minLength: 3
+        type: string
+    required:
+    - item_id
+    - quantity
+    - user_id
+    type: object
+  internal_modules_inventory.ReserveResponse:
+    properties:
+      expires_at:
+        example: "2026-07-20T16:35:00Z"
+        type: string
+      item_id:
+        example: item_4021
+        type: string
+      quantity:
+        example: 2
+        type: integer
+      reservation_id:
+        example: res_883291
+        type: string
+      status:
+        example: success
+        type: string
+    type: object
+  internal_modules_inventory.StockResponse:
+    properties:
+      available_stock:
+        example: 85
+        type: integer
+      item_id:
+        example: item_4021
+        type: string
+      reserved_stock:
+        example: 15
+        type: integer
+      total_stock:
+        example: 100
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: High-throughput inventory reservation system. Reservasi stok otomatis
+    kedaluwarsa dalam 5 menit jika tidak dikonfirmasi.
+  title: INDICO Inventory Reservation API
+  version: "1.0"
+paths:
+  /api/v1/inventory/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Mengubah reservasi aktif menjadi permanen dan mengurangi stok fisik.
+        Reservasi yang sudah kedaluwarsa atau sudah dikonfirmasi akan ditolak.
+      parameters:
+      - description: Payload konfirmasi
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_inventory.ConfirmRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_modules_inventory.ConfirmResponse'
+        "400":
+          description: Input tidak valid
+          schema:
+            $ref: '#/definitions/indico_backend_internal_platform_httpx.ErrorResponse'
+        "404":
+          description: Reservasi tidak ditemukan
+          schema:
+            $ref: '#/definitions/indico_backend_internal_platform_httpx.ErrorResponse'
+        "409":
+          description: Reservasi sudah dikonfirmasi
+          schema:
+            $ref: '#/definitions/indico_backend_internal_platform_httpx.ErrorResponse'
+        "410":
+          description: Reservasi sudah kedaluwarsa
+          schema:
+            $ref: '#/definitions/indico_backend_internal_platform_httpx.ErrorResponse'
+        "500":
+          description: Kesalahan internal
+          schema:
+            $ref: '#/definitions/indico_backend_internal_platform_httpx.ErrorResponse'
+      summary: Konfirmasi reservasi
+      tags:
+      - inventory
+  /api/v1/inventory/reserve:
+    post:
+      consumes:
+      - application/json
+      description: Mengunci stok secara atomik untuk seorang user. Reservasi otomatis
+        kedaluwarsa dalam 5 menit jika tidak dikonfirmasi.
+      parameters:
+      - description: Payload reservasi
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_inventory.ReserveRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_modules_inventory.ReserveResponse'
+        "400":
+          description: Input tidak valid
+          schema:
+            $ref: '#/definitions/indico_backend_internal_platform_httpx.ErrorResponse'
+        "404":
+          description: Item tidak ditemukan
+          schema:
+            $ref: '#/definitions/indico_backend_internal_platform_httpx.ErrorResponse'
+        "409":
+          description: Stok tidak mencukupi
+          schema:
+            $ref: '#/definitions/indico_backend_internal_platform_httpx.ErrorResponse'
+        "500":
+          description: Kesalahan internal
+          schema:
+            $ref: '#/definitions/indico_backend_internal_platform_httpx.ErrorResponse'
+      summary: Reservasi stok item
+      tags:
+      - inventory
+  /api/v1/inventory/stock:
+    get:
+      description: 'Menampilkan rincian stok real-time: total, yang sedang direservasi,
+        dan yang tersedia.'
+      parameters:
+      - description: ID item
+        example: item_4021
+        in: query
+        name: item_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_modules_inventory.StockResponse'
+        "400":
+          description: Parameter tidak valid
+          schema:
+            $ref: '#/definitions/indico_backend_internal_platform_httpx.ErrorResponse'
+        "404":
+          description: Item tidak ditemukan
+          schema:
+            $ref: '#/definitions/indico_backend_internal_platform_httpx.ErrorResponse'
+        "500":
+          description: Kesalahan internal
+          schema:
+            $ref: '#/definitions/indico_backend_internal_platform_httpx.ErrorResponse'
+      summary: Status stok item
+      tags:
+      - inventory
+swagger: "2.0"
